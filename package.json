@@ -1,0 +1,43 @@
+{
+  "name": "crowdapi",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Service for crowdsale",
+  "keywords": [
+    "swagger",
+    "express",
+    "api"
+  ],
+  "author": "n0cte",
+  "license": "Apache-2.0",
+  "main": "app.js",
+  "bin": {},
+  "scripts": {
+    "start": "forever ./bin/www.js",
+    "start-dev": "nodemon --exec 'npm run lint && npm run dev'",
+    "dev": "node ./bin/www.js",
+    "lint": "eslint app.js"
+  },
+  "dependencies": {
+    "bitcore-lib": "^0.14.0",
+    "express": "^4.16.0",
+    "forever": "^0.15.3",
+    "kue": "^0.11.6",
+    "mongoose": "^4.11.13",
+    "mongoose-hidden": "^1.4.2",
+    "node-fetch": "^1.7.3",
+    "poloniex.js": "0.0.7",
+    "satoshi-bitcoin": "^1.0.4",
+    "socket.io-client": "^2.0.3",
+    "swagger-jsdoc": "^1.9.7",
+    "swagger-tools": "^0.10.1",
+    "web3": "^1.0.0-beta.22"
+  },
+  "devDependencies": {
+    "eslint": "^4.7.2",
+    "nodemon": "^1.12.1"
+  },
+  "engines": {
+    "node": ">=8.6.0"
+  }
+}
