@@ -1,8 +1,13 @@
 'use strict';
+const BigNumber = require('bignumber.js');
 
 const contract = require('../rpc/contract');
 const ethereum = require('../rpc/ethereum');
 const bitcoin = require('../rpc/bitcoin');
+const poloniex = require('../rpc/poloniex');
+
+const promisify = require('../lib/utils').promisify;
+const compose = require('../lib/utils').compose;
 
 const {
   InternalError
@@ -199,9 +204,17 @@ function verified(req, res){
  *            frozen:
  *              type: integer
  *              description: Замороженный баланс
- *            decimals:
+ *       200:
+ *         description: Возвращает балансы
+ *         schema:
+ *          type: object
+ *          properties:
+ *            balance:
  *              type: integer
- *              description: Делитель
+ *              description: Текущий баланс
+ *            frozen:
+ *              type: integer
+ *              description: Замороженный баланс
  *       500:
  *         description: При появлении внутренней ошибки
  *         schema:
@@ -209,16 +222,38 @@ function verified(req, res){
  */
 function balance(req, res){
   const address = req.swagger.params.address.value;
-
-  Promise.all([
-    contract.decimals(),
-    contract.balanceOf(address),
-    contract.frozenBalanceOf(address)
-  ]).then(
-    (decimals, balance, frozen) =>
+  const promise = (ethereum.utils.isAddress(address))
+    ? Promise.resolve(address)
+    : Promise.reject(new Error('not valid address'));
+  promise
+  .then(
+    address =>
+      Promise.all([
+        contract.decimals(),
+        contract.balanceOf(address),
+        contract.frozenBalanceOf(address)
+      ])
+  )
+  .then(
+    ([decimals, balance, frozen]) =>
+      ({
+        decimals: parseInt(decimals),
+        balance: (new BigNumber(balance)),
+        frozen: (new BigNumber(frozen))
+      })
+  )
+  .then(
+    ({decimals, balance, frozen}) =>
+      ({
+        balance: balance.dividedBy(10**decimals).toNumber(),
+        frozen: frozen.dividedBy(10**decimals).toNumber()
+      })
+  )
+  .then(
+    data =>
       res
         .status(200)
-        .json({ balance, frozen, decimals})
+        .json(data)
   ).catch(
     (e) => console.log(e) ||
       res
@@ -227,4 +262,83 @@ function balance(req, res){
   )
 }
 
-module.exports = { balance, verified, verify, unverify };
+
+/**
+ * @swagger
+ * /stats:
+ *   get:
+ *     x-swagger-router-controller:
+ *       token
+ *     operationId:
+ *       stats
+ *     tags:
+ *       - Token
+ *     description: Возвращает стоимость токенов в BTC и ETH
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       default:
+ *         description: Информация о транзакции, которая верифицирует пользователя
+ *         schema:
+ *          type: object
+ *          properties:
+ *            nox2eth:
+ *              type: number
+ *            nox2btc:
+ *              type: number
+ *       500:
+ *         description: При появлении внутренней ошибки
+ *         schema:
+ *           $ref: '#/definitions/InternalError'
+ */
+function stats(req, res){
+  const ether = ethereum.utils.unitMap.ether;
+  const get24hVolume = promisify(poloniex.get24hVolume.bind(poloniex));
+  const btc2eth =
+    () =>
+      get24hVolume()
+        .then( ({ BTC_ETH, USDT_ETH }) => ({
+          btc2eth: BTC_ETH['ETH']/BTC_ETH['BTC'],
+          usdt2eth: USDT_ETH['USDT']/USDT_ETH['ETH']
+        }));
+  Promise.all([
+    btc2eth(),
+    contract.price()
+  ]).then(
+    ([coef, price]) =>
+      [ coef, new BigNumber(price) ]
+  ).then(
+    ([ { btc2eth, usdt2eth }, price]) => {
+      const nox2eth = price.div(ether).toNumber();
+      const nox2btc = price.div(ether).div(btc2eth.toString()).toNumber();
+      const nox2usd = nox2eth * usdt2eth; 
+      //ToDo: implement invested
+      return {
+        nox2eth,
+        nox2btc,
+        nox2usd,
+        invested: {
+          btc: 5,
+          eth: 10,
+          usd: 33000,
+          total: 100000,
+          investorsCount: 6
+        }
+      }
+    }
+  )
+  .then(
+    data =>
+      res
+        .status(200)
+        .json(data)
+  )
+  .catch(
+    e =>
+      res
+        .status(500)
+        .json(new InternalError())
+  )
+}
+
+module.exports = { balance, verified, verify, unverify, stats };

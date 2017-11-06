@@ -3,14 +3,10 @@
 const Express = require('express');
 const SwaggerJSDoc = require('swagger-jsdoc');
 const SwaggerTools = require('swagger-tools').initializeMiddleware;
-const mongoose = require('mongoose');
+
 const models = require('./models');
 const config = require('./config');
-
-mongoose.Promise = global.Promise;
-mongoose.connect(config.mongoUri, {
-  useMongoClient: true
-});
+const mongoose = require('./config/mongoose');
 
 const swaggerJsDoc = SwaggerJSDoc({
   swaggerDefinition: {

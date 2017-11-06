@@ -2,24 +2,14 @@
 'use strict';
 
 const app = require('../src/app.js');
-const mongoose = require('mongoose');
-
+const mongoose = require('../src/config/mongoose');
+const logger = require('../src/config/logger')('app');
 
 mongoose.connection.on('connected', function () {  
   app.listen(8080, () =>
-    console.log("App started on port 8080")
+    logger.info("Started on port 8080")
   );
 }); 
-
-mongoose.connection.on('error',function (err) {  
-  console.log('Mongoose: ' + err);
-  process.exit(0);
-}); 
-
-mongoose.connection.on('disconnected', function () {  
-  console.log('Mongoose disconnected');
-  process.exit(0); 
-});
 
 process.on('SIGINT', function() {  
   mongoose.connection.close(function(){ 

@@ -189,27 +189,19 @@ contract Token is HaltableToken {
 
   using SafeMath for uint;
 
-  string public name   = "";
-  string public symbol = "";
+  string public name   = "Nitro";
+  string public symbol = "NOX";
 
-  uint public totalSupply = 0;
-  uint public bounty      = 0;
-  uint public price       = 0;
-
-  uint public decimals    = 18;
+  uint public decimals    = 6;
+  uint public multiplier  = 10**decimals;
   
+  uint public totalSupply = 120000000 * multiplier;
+  uint public bounty      = 1000000 * multiplier;
+  uint public price       = 1 ether;
+
   event Buy(address indexed sender, uint amount, uint tokens);
   
-  function Token(uint _totalSupply, uint _bounty, uint _decimals, uint _price, string _name, string _symbol) public {
-    decimals = _decimals;
-
-    totalSupply = _totalSupply;
-    bounty = _bounty;
-    price = _price;
-
-    name = _name;
-    symbol = _symbol;
-
+  function Token() public {
     balances[owner] = totalSupply;
   }
   
@@ -243,71 +235,82 @@ contract Token is HaltableToken {
 
 }
 
-contract VToken is Token {
-    
-    using SafeMath for uint;
-    
-    uint public limit = 4 ether;
-    
-    mapping (address => uint256) fBalances;
-    mapping (address => bool) public verified;
-    
-    function VToken(uint _totalSupply, uint _bounty, uint _decimals, uint _price,  string _name, string _symbol) Token(_totalSupply, _bounty, _decimals, _price, _name, _symbol) public {
-    }
-    
-    function frozenBalanceOf(address _owner) public constant returns (uint256) {
-      return fBalances[_owner];
-    }
+contract FrozeableToken is Token {
 
-    function verify(address _addr) onlyOwner public returns (bool) {
-      verified[_addr] = true;
-      balances[_addr] = balances[_addr].add(fBalances[_addr]);
-      fBalances[_addr] = 0;
-      return verified[_addr];
-    }
+  using SafeMath for uint;
 
-    function unverify(address _addr) onlyOwner public returns (bool) {
-      verified[_addr] = false;
-      return verified[_addr];
-    }
+  uint public limit = 4 ether;
     
-    function setLimit(uint _ethLimit) onlyOwner public returns (uint) {
-      limit = _ethLimit * 1 ether;
-      return limit;
-    }
+  mapping (address => uint256) fBalances;
+  mapping (address => bool) public verified;
+  
+  function frozenBalanceOf(address _owner) public constant returns (uint256) {
+    return fBalances[_owner];
+  }
+  
+  function verify(address _addr) onlyOwner public returns (bool) {
+    verified[_addr] = true;
+    balances[_addr] = balances[_addr].add(fBalances[_addr]);
+    fBalances[_addr] = 0;
+    return verified[_addr];
+  }
 
-    function transfering(address _sender, uint _value) private returns (uint tokens) {
-      tokens = _value.div(price);
-      tokens = tokens.mul(10**decimals);
+  function unverify(address _addr) onlyOwner public returns (bool) {
+    verified[_addr] = false;
+    return verified[_addr];
+  }
+    
+  function setLimit(uint _ethLimit) onlyOwner public returns (uint) {
+    limit = _ethLimit * 1 ether;
+    return limit;
+  }
+
+  function transfering(address _sender, uint _value) private returns (uint tokens) {
+    tokens = _value.mul(multiplier).div(price);
       
-      require(tokens > 0);
-      require(balances[owner]>tokens);
+    require(tokens > 0);
+    require(balances[owner]>tokens);
 
-      uint fTokens = 0;
-      uint aTokens = tokens;
+    uint fTokens = 0;
+    uint aTokens = tokens;
 
-      if ( _value > limit && !verified[_sender] ) {
-        fTokens = _value.sub(limit);
-        fTokens = fTokens.div(price);
-        fTokens = fTokens.mul(10**decimals);
-        aTokens = tokens.sub(fTokens);
-      }
+    if ( _value > limit && !verified[_sender] ) {
+      fTokens = _value.sub(limit);
+      fTokens = fTokens.mul(multiplier).div(price);
+      aTokens = tokens.sub(fTokens);
+    }
         
-      balances[_sender] = balances[_sender].add(aTokens);
-      fBalances[_sender] = fBalances[_sender].add(fTokens);
+    balances[_sender] = balances[_sender].add(aTokens);
+    fBalances[_sender] = fBalances[_sender].add(fTokens);
 
-      balances[owner] = balances[owner].sub(tokens);
+    balances[owner] = balances[owner].sub(tokens);
 
-      Buy(_sender, _value, tokens);
-      Transfer(owner, _sender, aTokens);
-    }
+    Buy(_sender, _value, tokens);
+    Transfer(owner, _sender, tokens);
+  }
     
-    function buy() notHalted public payable returns (uint tokens) {
-        tokens = transfering(msg.sender, msg.value);
-    }
+  function buy() notHalted public payable returns (uint tokens) {
+      tokens = transfering(msg.sender, msg.value);
+  }
     
-    function transferTo(address _to, uint _wei) onlyOwner public returns (uint tokens) {
-        tokens = transfering(_to, _wei);
-    }
+  function transferTo(address _to, uint _wei) onlyOwner public returns (uint tokens) {
+    tokens = transfering(_to, _wei);
+  }
+  
+  function() payable public {
+    buy();
+  }
+ 
 }
-//0xe60e8e849e1967879ab3ed6137defb57fad3baf6
+
+contract NitroToken is FrozeableToken {
+
+  function withdrawal(address _to, uint _value) onlyOwner public {
+    _to.transfer(_value);  
+  }
+
+  function destroy() onlyOwner public {
+    selfdestruct(owner);
+  }
+
+}

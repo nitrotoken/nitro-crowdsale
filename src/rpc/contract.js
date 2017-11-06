@@ -34,6 +34,10 @@ Object.assign(exports, {
   account,
   contract,
 
+  price(){
+    return contract.methods.price().call()
+  },
+  
   decimals(){
     return contract.methods.decimals().call()
   },
@@ -62,7 +66,7 @@ Object.assign(exports, {
     return fromOwner('setLimit', ethLimit);
   },
 
-  funding(to, eth){
-    return fromOwner('funding', to, eth);
+  transferTo(to, wei){
+    return fromOwner('transferTo', to, wei);
   }
 });

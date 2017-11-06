@@ -3,6 +3,8 @@
 const contract = require('../rpc/contract');
 const ethereum = require('../rpc/ethereum');
 const bitcoin = require('../rpc/bitcoin');
+const etherscan = require('../rpc/etherscan');
+const TxObject = require('../models/TxObject');
 
 const {
   RpcError,
@@ -41,7 +43,7 @@ const {
  *         schema:
  *          type: array
  *          items:
- *            $ref: '#/definitions/Tx'
+ *            $ref: '#/definitions/TxObject'
  *       500:
  *         description: При появлении внутренней ошибки
  *         schema:
@@ -50,14 +52,22 @@ const {
 function tx(req, res){
   const type = req.swagger.params.type.value;
   const address = req.swagger.params.address.value;
-  
+
   let promise = Promise.reject(new InternalError());
   switch(type){
     case 'eth':
-      //ToDo
+      promise = etherscan.account.txlist(address, 1, 'latest', 'asc')
+        .then(
+          txlist => txlist.result.map(TxObject.fromEth.bind(TxObject)),
+          () => []
+        )
       break;
     case 'btc':
       promise = bitcoin.txByAddr(address)
+        .then(
+          txlist => txlist.txs.map(tx => TxObject.fromBtc(tx, address)),
+          () => []
+        )
       break;
   }
 
@@ -69,7 +79,7 @@ function tx(req, res){
           .json(txs)
     )
     .catch(
-      () =>
+      e => console.log(e) ||
         res
           .status(500)
           .json(new InternalError())
