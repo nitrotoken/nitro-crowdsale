@@ -1,13 +1,34 @@
 pragma solidity ^0.4.16;
 
-import './token/MintableToken.sol';
+import './token/HaltableToken.sol';
 
-contract NitroToken is MintableToken {
+contract NitroToken is HaltableToken {
+    
+  string public constant name   = "Nitro";
+  string public constant symbol = "NOX";
+  uint8 public constant decimals    = 18;
 
-  string public name   = "Nitro";
-  string public symbol = "NOX";
+  bool public halted = true;
 
-  uint public decimals    = 6;
-  uint public multiplier  = 10**decimals;
+  modifier notHalted(){
+    if(msg.sender!=owner){
+      require(!halted);
+    }
+    _;
+  }
+
+  function NitroToken(uint256 _totalSupply) public {
+    totalSupply = _totalSupply;
+    balances[owner] = _totalSupply;
+    Transfer(address(0), owner, _totalSupply);
+  }
+  
+  function acceptOwnership() public {
+    address oldOwner = owner;
+    super.acceptOwnership();
+    balances[owner] = balances[oldOwner];
+    balances[oldOwner] = 0;
+    Transfer(oldOwner, owner, balances[owner]);
+  }
 
 }

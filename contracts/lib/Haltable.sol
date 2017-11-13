@@ -4,21 +4,33 @@ import './Ownable.sol';
 
 contract Haltable is Ownable {
 
+  event Halt();
+  event Unhalt();
+  
   bool public halted = false;
 
+  /**
+   * @dev modifier to allow actions only when the contract is not halted
+   */
   modifier notHalted(){
     require(!halted);
     _;
   }
 
-  function halt() external onlyOwner returns (bool) {
+  /**
+   * @dev called by the owner to halt
+   */
+  function halt() onlyOwner public {
     halted = true;
-    return halted;
+    Halt();
   }
 
-  function unHalt() external onlyOwner returns (bool) {
+  /**
+   * @dev called by the owner to unhalt
+   */
+  function unhalt() onlyOwner public {
     halted = false;
-    return halted;
+    Unhalt();
   }
 
 }

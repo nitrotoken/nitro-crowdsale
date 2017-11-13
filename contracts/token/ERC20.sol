@@ -2,15 +2,30 @@ pragma solidity ^0.4.16;
 
 /**
  * @title ERC20 interface
- * @dev see https://github.com/ethereum/EIPs/issues/20
+ * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
  */
 contract ERC20 {
 
   /**
-   * total amount of tokens
+   * name of the token - e.g. "MyTokenName"
+   */
+  string public name;
+
+  /**
+   * symbol of the token - e.g. "MTN"
+   */
+  string public symbol;
+
+  /**
+   * the number of decimals the token uses
+   */
+  uint8 public decimals;
+
+  /**
+   * the total token supply.
    */
   uint256 public totalSupply;
-
+  
   /**
    * @param _owner The address from which the balance will be retrieved
    * @return The balance
@@ -49,7 +64,14 @@ contract ERC20 {
    */
   function allowance(address _owner, address _spender) public constant returns (uint256 remaining);
 
+  /**
+   * MUST trigger when tokens are transferred, including zero value transfers.
+   */
   event Transfer(address indexed _from, address indexed _to, uint256 _value);
+
+  /**
+   * MUST trigger on any successful call to approve(address _spender, uint256 _value)
+   */
   event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
 }
