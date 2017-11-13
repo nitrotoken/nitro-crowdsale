@@ -38,8 +38,16 @@ contract Crowdsale is Ownable {
   uint public constant saleEnd = 1517000399000;
   uint public constant saleRate = 800;
   
+  uint public constant nitroTeamUnfreezeDate = saleEnd + 182 days;
+  
   uint public crowdsaleTokens = 60000000 * 10**18;
-  uint public reservedTokens = 60000000 * 10**18;
+  uint public interactiveTokens = 6000000 * 10**18;
+  uint public iCandyTokens = 3000000 * 10**18;
+  uint public consultantTokens = 1200000 * 10**18;
+  uint public reservedTokens = 42600000 * 10**18;
+  uint public nitroTeamTokens = 7200000 * 10**18;
+  
+  uint public nitroTeamFrozenTokens = 4800000 *10**18;
   
   uint public limit = 7 ether;
   
@@ -49,7 +57,7 @@ contract Crowdsale is Ownable {
   bool public finished = false;
 
   //Token
-  NitroToken public token = new NitroToken(crowdsaleTokens+reservedTokens);
+  NitroToken public token;
   
   event Finished();
   event Verified(address indexed beneficiary);
@@ -68,6 +76,11 @@ contract Crowdsale is Ownable {
   function Crowdsale(address _wallet) public {
     require(_wallet != address(0));
     wallet = _wallet;
+    token = createTokenContract();
+  }
+  
+  function createTokenContract() internal returns (NitroToken) {
+    return new NitroToken(crowdsaleTokens+interactiveTokens+iCandyTokens+consultantTokens+reservedTokens+nitroTeamTokens);
   }
 
   /**
@@ -117,13 +130,53 @@ contract Crowdsale is Ownable {
     selfdestruct(wallet);
   }
   
+  function interactiveTokensToAddr(address _addr, uint _tokens) onlyOwner public {
+    require(_addr!=address(0));
+    
+    uint tokens = _tokens.mul(10**18);
+    interactiveTokens = interactiveTokens.sub(tokens);
+    
+    token.transfer(_addr, tokens);
+  }
+  
+  function iCandyTokensToAddr(address _addr, uint _tokens) onlyOwner public {
+    require(_addr!=address(0));
+    
+    uint tokens = _tokens.mul(10**18);
+    iCandyTokens = iCandyTokens.sub(tokens);
+    
+    token.transfer(_addr, tokens);
+  }
+  
+  function consultantTokensToAddr(address _addr, uint _tokens) onlyOwner public {
+    require(_addr!=address(0));
+    
+    uint tokens = _tokens.mul(10**18);
+    consultantTokens = consultantTokens.sub(tokens);
+    
+    token.transfer(_addr, tokens);
+  }
+  
+  function nitroTeamTokensToAddr(address _addr, uint _tokens) onlyOwner public {
+    require(_addr!=address(0));
+    
+    uint tokens = _tokens.mul(10**18);
+    
+    if(now<nitroTeamUnfreezeDate){
+      require(tokens<=nitroTeamTokens.sub(nitroTeamFrozenTokens));
+    }
+    nitroTeamTokens = nitroTeamTokens.sub(tokens);
+    
+    token.transfer(_addr, tokens);
+  }
+  
   function reserveTokensSendToAddr(address _addr, uint _tokens) onlyOwner public {
     require(_addr!=address(0));
 
     uint tokens = _tokens.mul(10**18);
     reservedTokens = reservedTokens.sub(tokens);
     
-    token.transfer(_addr, tokens);        
+    token.transfer(_addr, tokens);
     TokenPurchase(owner, _addr, 0, tokens);
     ReservedToWallet(_addr, tokens);
   }
