@@ -4,11 +4,11 @@ import './token/HaltableToken.sol';
 
 contract NitroToken is HaltableToken {
     
-  string public constant name   = "Nitro";
+  string public constant name = "Nitro";
   string public constant symbol = "NOX";
-  uint8 public constant decimals    = 18;
+  uint8 public constant decimals = 18;
 
-  bool public halted = true;
+  bool public halted = false;
 
   modifier notHalted(){
     if(msg.sender!=owner){
