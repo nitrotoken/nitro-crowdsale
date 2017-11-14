@@ -13,7 +13,9 @@ contract Haltable is Ownable {
    * @dev modifier to allow actions only when the contract is not halted
    */
   modifier notHalted(){
-    require(!halted);
+    if(msg.sender!=owner){
+      require(!halted);
+    }
     _;
   }
 

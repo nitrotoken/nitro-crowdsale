@@ -10,13 +10,6 @@ contract NitroToken is HaltableToken {
 
   bool public halted = false;
 
-  modifier notHalted(){
-    if(msg.sender!=owner){
-      require(!halted);
-    }
-    _;
-  }
-
   function NitroToken(uint256 _totalSupply) public {
     totalSupply = _totalSupply;
     balances[owner] = _totalSupply;
