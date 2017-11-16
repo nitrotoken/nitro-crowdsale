@@ -1,8 +1,9 @@
 pragma solidity ^0.4.18;
 
-import './token/HaltableToken.sol';
+import './token/ERC20Token.sol';
+import './lib/Ownable.sol';
 
-contract NitroToken is HaltableToken {
+contract NitroToken is ERC20Token, Ownable {
     
   string public constant name = "Nitro";
   string public constant symbol = "NOX";

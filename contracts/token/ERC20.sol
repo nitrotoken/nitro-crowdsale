@@ -2,30 +2,15 @@ pragma solidity ^0.4.18;
 
 /**
  * @title ERC20 interface
- * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
+ * @dev see https://github.com/ethereum/EIPs/issues/20
  */
 contract ERC20 {
 
   /**
-   * name of the token - e.g. "MyTokenName"
-   */
-  string public name = '';
-
-  /**
-   * symbol of the token - e.g. "MTN"
-   */
-  string public symbol = '';
-
-  /**
-   * the number of decimals the token uses
-   */
-  uint8 public decimals = 18;
-
-  /**
    * the total token supply.
    */
-  uint256 public totalSupply = 0;
-  
+  uint256 public totalSupply;
+
   /**
    * @param _owner The address from which the balance will be retrieved
    * @return The balance
