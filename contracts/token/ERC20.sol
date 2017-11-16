@@ -1,4 +1,4 @@
-pragma solidity ^0.4.16;
+pragma solidity ^0.4.18;
 
 /**
  * @title ERC20 interface
@@ -9,22 +9,22 @@ contract ERC20 {
   /**
    * name of the token - e.g. "MyTokenName"
    */
-  string public name;
+  string public name = '';
 
   /**
    * symbol of the token - e.g. "MTN"
    */
-  string public symbol;
+  string public symbol = '';
 
   /**
    * the number of decimals the token uses
    */
-  uint8 public decimals;
+  uint8 public decimals = 18;
 
   /**
    * the total token supply.
    */
-  uint256 public totalSupply;
+  uint256 public totalSupply = 0;
   
   /**
    * @param _owner The address from which the balance will be retrieved

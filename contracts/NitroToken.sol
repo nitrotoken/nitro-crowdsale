@@ -1,4 +1,4 @@
-pragma solidity ^0.4.16;
+pragma solidity ^0.4.18;
 
 import './token/HaltableToken.sol';
 
@@ -7,8 +7,6 @@ contract NitroToken is HaltableToken {
   string public constant name = "Nitro";
   string public constant symbol = "NOX";
   uint8 public constant decimals = 18;
-
-  bool public halted = false;
 
   function NitroToken(uint256 _totalSupply) public {
     totalSupply = _totalSupply;
