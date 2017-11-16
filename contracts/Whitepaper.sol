@@ -35,13 +35,13 @@ contract Whitepaper{
   /**
    * Dates
    */
-  uint256 public constant preSaleStart = 1513285200000;
-  uint256 public constant preSaleEnd = 1513976399000;
+  uint256 public constant preSaleStart = 1511020800;
+  uint256 public constant preSaleEnd = 1511452800;
     
-  uint256 public constant saleStart = 1514322000000;
+  uint256 public constant saleStart = 1512057600;
   uint256 public constant saleStartFirstDayEnd = saleStart + 1 days;
   uint256 public constant saleStartSecondDayEnd = saleStart + 2 days;
-  uint256 public constant saleEnd = 1517000399000;
+  uint256 public constant saleEnd = 1514304000;
   
   uint256 public constant NITRO_TEAM_UNFREEZE_DATE = saleEnd + 182 days;
 
