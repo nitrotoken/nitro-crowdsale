@@ -12,7 +12,6 @@ contract Crowdsale is Declaration, Ownable{
     uint256 public satLimit = 30000000;
 
     mapping(address => bool) users;
-    mapping(address => uint256) unvWei;
     mapping(address => uint256) weiOwed;
     mapping(address => uint256) satOwed;
     mapping(address => uint256) weiTokensOwed;
@@ -42,9 +41,6 @@ contract Crowdsale is Declaration, Ownable{
         uint256 amount = _value * rate();
         balances[0] = balances[0].sub(amount);
         token.transfer(_addr, amount);
-        if(!users[_addr]){
-            unvWei[_addr] += _value;
-        }
         weiRaised += _value;
         TokenPurchase(_addr, _addr, _value, amount);
     }
@@ -55,7 +51,7 @@ contract Crowdsale is Declaration, Ownable{
         }else{
           require(msg.value > 0);
         }
-        if (weiOwed[msg.sender]>0 || unvWei[msg.sender]>=weiLimit) {
+        if (weiOwed[msg.sender]>0) {
           weiFreeze(msg.sender, msg.value);
         } else if (msg.value>weiLimit && !users[msg.sender]) {
           weiFreeze(msg.sender, msg.value.sub(weiLimit));
@@ -75,7 +71,7 @@ contract Crowdsale is Declaration, Ownable{
         token.transfer(_addr, weiTokensOwed[_addr] + satTokensOwed[_addr]);
         
         TokenPurchase(_addr, _addr, 0, weiTokensOwed[_addr] + satTokensOwed[_addr]);
-        unvWei[_addr]=0;
+
         weiOwed[_addr]=0;
         satOwed[_addr]=0;
         weiTokensOwed[_addr]=0;
