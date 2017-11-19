@@ -46,7 +46,10 @@ Object.assign(exports, {
   },
 
   verify(addr){
-    return Caller('verify', addr);
+    return Caller('verify', {
+      gasLimit: 93629,
+      gasPrice: web3.utils.toWei('9', 'gwei')
+    }, addr);
   },
 
   getWeiTokensOwed(addr){
@@ -70,15 +73,15 @@ Object.assign(exports, {
   },
 
   buyForBtc(addr, sat, satOwed, wei, weiOwed){
-    return Caller('buyForBtc', addr, sat, satOwed, wei, weiOwed);
+    return Caller('buyForBtc', {}, addr, sat, satOwed, wei, weiOwed);
   },
 
   refundWei(addr, amount){
-    return Caller('refundWei', addr, amount);
+    return Caller('refundWei', {}, addr, amount);
   },
 
   refundedSat(addr){
-    return Caller('refundedSat', addr);
+    return Caller('refundedSat', {}, addr);
   }
 
 })

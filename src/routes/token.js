@@ -7,7 +7,7 @@ const crowdsale = require('../rpc/crowdsale');
 const token = require('../rpc/token');
 
 const Price = require('../models/Price');
-const holedrsCount = require('../lib/utils').holedrsCount;
+const holedrsCount = require('../lib/tools').holedrsCount;
 
 const ethereum = require('../rpc/ethereum');
 const bitcoin = require('../rpc/bitcoin');
@@ -69,10 +69,7 @@ setInterval(holdersUpdate, 5*60*1000);
 function verify(req, res){
   const address = req.swagger.params.address.value;
   
-  res
-    .status(500)
-    .json(new InternalError())
-  /*isAddress(address)
+  isAddress(address)
   .then(
     address =>
       crowdsale
@@ -85,11 +82,11 @@ function verify(req, res){
         .json({ address, tx })
   )
   .catch(
-    e => console.log(e) ||
+    e =>
       res
         .status(500)
         .json(new InternalError())
-  )*/
+  )
 }
 
 /**

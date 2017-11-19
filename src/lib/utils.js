@@ -78,19 +78,26 @@ const fetch =
 const ContractCallerFactory =
 (web3) =>
   (contract, contractAddress, account) =>
-    (methodName, ...args) => {
+    (methodName, data = {}, ...args) => {
       const method = contract.methods[methodName](...args);    
       return method
         .estimateGas()
-        .then(gas => account.signTransaction({
-          to: contractAddress,
-          gasLimit: gas,
-          data: method.encodeABI()
-        }))
+        .then(
+          gas => {
+            const details = Object.assign({}, {
+              to: contractAddress,
+              gasLimit: gas,
+              data: method.encodeABI()
+            }, data);
+            return account.signTransaction(details);
+          }
+        )
       .then(
         ({rawTransaction}) =>
-          //etherscan.proxy.eth_sendRawTransaction(rawTransaction)
-          web3.eth.sendSignedTransaction(rawTransaction)
+          etherscan.proxy.eth_sendRawTransaction(rawTransaction)
+          //web3.eth.sendSignedTransaction(rawTransaction)
+      ).then(
+        ({ result }) => result
       );
   };
 
@@ -103,12 +110,6 @@ const isAddress =
     ? Promise.resolve(address)
     : Promise.reject(new Error('not valid address'));
 
-const holedrsCount =
-() =>
-  Fetch('https://etherscan.io/token/generic-tokenholders2?a=0xec46f8207d766012454c408de210bcbc2243e71c')
-    .then( res => res.text() )
-    .then( text => text.match(/total of (.*) Token Holders/g)[0].match(/[\d]+/g)[0] ); 
-
 module.exports = {
   promisify,
   curry,
@@ -116,6 +117,5 @@ module.exports = {
   pcompose,
   fetch,
   ContractCallerFactory,
-  isAddress,
-  holedrsCount
+  isAddress
 };
