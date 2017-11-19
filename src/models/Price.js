@@ -38,8 +38,8 @@ const PriceSchema = new mongoose.Schema({
 PriceSchema.method({
 
   toJSON(){
-    const { token } = this;
-    return { token };
+    const { btc, usd, eur } = this;
+    return { btc, usd, eur };
   }
 
 });
@@ -83,8 +83,16 @@ PriceSchema.static({
   }
 
 });
-  
+
+const Price = mongoose.model('Price', PriceSchema);
+
+function updater(){
+  Price.update();
+}
+updater();
+setInterval(updater, 1*60*60*1000);
+
 /**
  * Register
  */
-module.exports = mongoose.model('Price', PriceSchema);
+module.exports = Price;

@@ -1,6 +1,31 @@
 'use strict';
 const BigNumber = require('bignumber.js');
 const ethereum = require('../rpc/ethereum');
+const ethCrowsale = require('../config').ethCrowsale;
+const crowdsale = require('../rpc/crowdsale');
+
+const preSaleStart = 1511020800;
+const preSaleEnd = 1511452800;
+const saleStart = 1512057600;
+const saleStartFirstDayEnd = 1512144000;
+const saleStartSecondDayEnd = 1512316800;
+const saleEnd = 1514304000;
+
+const preSaleRate = 1040;
+const saleRate = 800;
+const saleRateFirstDay = 1000;
+const saleRateSecondDay = 920;
+
+function Rate(date = (Date.now()/1000 | 0)){
+  if(date>=preSaleStart && date<=preSaleEnd){
+    return preSaleRate;
+  }else if(date>=saleStart && date<=saleStartFirstDayEnd){
+    return saleRateFirstDay;
+  }else if(date>=saleRateFirstDay && date<=saleStartSecondDayEnd){
+    return saleRateSecondDay;
+  }
+  return saleRate;
+}
 
 const STATUS = {
   confirmed: 0,
@@ -17,12 +42,18 @@ function ethTx2status(tx){
     : STATUS.confirmed;
 }
 
-function ethDataDecode(data = ''){
-  //ToDo: Fucking todo for decode description
-  return 'BUY NOX';
-}
-
 function btcTx2status(tx){}
+
+function rate(){
+  if (isPresale()) {
+    return preSaleRate;
+  } else if (now>=saleStart && now<=(saleStartFirstDayEnd)){
+    return saleRateFirstDay;
+  } else if (now>(saleStartFirstDayEnd) && now<=(saleStartSecondDayEnd)){
+    return saleRateSecondDay;
+  }
+  return saleRate;
+}
 
 /**
  * @swagger
@@ -76,13 +107,19 @@ module.exports = class TxObject{
   }
 
   static fromEth(tx){
+    const isNox = (tx.contractAddress===ethCrowsale || tx.to===ethCrowsale);
+    const rate = Rate(+tx.timeStamp);
+    let nox = 0;
+    if(isNox){
+      nox = ethereum.utils.fromWei(new BigNumber(tx.value).mul(rate).toString());
+    }
     return new TxObject(
       tx.hash,
       parseInt(tx.timeStamp),
-      ethDataDecode(tx.input),
+      isNox ? 'BUY NOX' : 'OTHER',
       ethTx2status(tx),
-      new BigNumber(tx.value).div(ethereum.utils.unitMap.ether).toNumber(),
-      0,
+      ethereum.utils.fromWei(tx.value),
+      nox,
       'eth',
       tx.from,
       (tx.to==='')?tx.contractAddress:tx.to

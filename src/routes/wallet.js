@@ -1,6 +1,8 @@
 'use strict';
 
-const contract = require('../rpc/contract');
+const crowdsale = require('../rpc/crowdsale');
+const token = require('../rpc/token');
+
 const ethereum = require('../rpc/ethereum');
 const bitcoin = require('../rpc/bitcoin');
 const etherscan = require('../rpc/etherscan');
@@ -56,7 +58,7 @@ function tx(req, res){
   let promise = Promise.reject(new InternalError());
   switch(type){
     case 'eth':
-      promise = etherscan.account.txlist(address, 1, 'latest', 'asc')
+      promise = etherscan.account.txlist(address, 1, 'latest', 'desc')
         .then(
           txlist => txlist.result.map(TxObject.fromEth.bind(TxObject)),
           () => []
@@ -79,7 +81,7 @@ function tx(req, res){
           .json(txs)
     )
     .catch(
-      e => console.log(e) ||
+      e =>
         res
           .status(500)
           .json(new InternalError())

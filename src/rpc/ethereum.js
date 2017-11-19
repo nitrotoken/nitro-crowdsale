@@ -1,9 +1,7 @@
 const Web3 = require('web3');
 
-const { compose } = require('../lib/utils');
-const config = require('../config');
+const url = require('../config').ethereumRpc;
+const provider = new Web3.providers.HttpProvider(url);
+const web3 = new Web3(provider);
 
-module.exports = compose(
-  url => new Web3.providers.HttpProvider(url),
-  provider => new Web3(provider)
-)(config.ethereumRpc);
+module.exports = web3;

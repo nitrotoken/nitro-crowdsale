@@ -1,17 +1,36 @@
 'use strict';
 const BigNumber = require('bignumber.js');
 
-const contract = require('../rpc/contract');
+const btcAddress = require('../config').btcAddress;
+const crowdsale = require('../rpc/crowdsale');
+const token = require('../rpc/token');
+
+const Price = require('../models/Price');
+const holedrsCount = require('../lib/utils').holedrsCount;
+
 const ethereum = require('../rpc/ethereum');
 const bitcoin = require('../rpc/bitcoin');
-const poloniex = require('../rpc/poloniex');
 
 const promisify = require('../lib/utils').promisify;
 const compose = require('../lib/utils').compose;
+const isAddress = require('../lib/utils').isAddress;
+
+const toBitcoin = require('satoshi-bitcoin').toBitcoin;
+const fromWei = ethereum.utils.fromWei;
 
 const {
   InternalError
 } = require('../models/Error');
+
+let HOLDERS = 0;
+
+function holdersUpdate(){
+  holedrsCount()
+    .then(c => HOLDERS = c)
+    .catch(e => {});
+}
+holdersUpdate();
+setInterval(holdersUpdate, 5*60*1000);
 
 /**
  * @swagger
@@ -50,73 +69,27 @@ const {
 function verify(req, res){
   const address = req.swagger.params.address.value;
   
-  contract
-    .verify(address)
-    .then(
-      tx =>
-        res
-          .status(200)
-          .json({ address, tx })
-    )
-    .catch(
-      () =>
-        res
-          .status(500)
-          .json(new InternalError())
-    )
-}
-
-/**
- * @swagger
- * /unverify/{address}:
- *   get:
- *     x-swagger-router-controller:
- *       token
- *     operationId:
- *       unverify
- *     tags:
- *       - Token
- *     description: Убирает состояние верифицированности ETH-кошелека пользователя
- *     produces:
- *       - application/json
- *     parameters:
- *       - name: address
- *         description: Адрес ETH-кошелька
- *         in: path
- *         required: true
- *         type: string
- *     responses:
- *       default:
- *         description: Информация о транзакции, которая деверифицирует пользователя
- *         schema:
- *          type: object
- *          properties:
- *            address:
- *              type: string
- *            tx:
- *              type: object
- *       500:
- *         description: При появлении внутренней ошибки
- *         schema:
- *           $ref: '#/definitions/InternalError'
- */
-function unverify(req, res){
-  const address = req.swagger.params.address.value;
-  
-  contract
-    .verify(address)
-    .then(
-      tx =>
-        res
-          .status(200)
-          .json({ address, tx })
-    )
-    .catch(
-      () =>
-        res
-          .status(500)
-          .json(new InternalError())
-    )
+  res
+    .status(500)
+    .json(new InternalError())
+  /*isAddress(address)
+  .then(
+    address =>
+      crowdsale
+        .verify(address)
+  )
+  .then(
+    tx =>
+      res
+        .status(200)
+        .json({ address, tx })
+  )
+  .catch(
+    e => console.log(e) ||
+      res
+        .status(500)
+        .json(new InternalError())
+  )*/
 }
 
 /**
@@ -156,20 +129,24 @@ function unverify(req, res){
 function verified(req, res){
   const address = req.swagger.params.address.value;
 
-  contract
-    .verified(address)
-    .then(
-      verified =>
-        res
-          .status(200)
-          .json({ address, verified })
-    )
-    .catch(
-      () =>
-        res
-          .status(500)
-          .json(new InternalError())
-    )
+  isAddress(address)
+  .then(
+    address =>
+      crowdsale
+        .isVerified(address)
+  )
+  .then(
+    verified =>
+      res
+        .status(200)
+        .json({ address, verified })
+  )
+  .catch(
+    () =>
+      res
+        .status(500)
+        .json(new InternalError())
+  )
   
 }
 
@@ -222,31 +199,21 @@ function verified(req, res){
  */
 function balance(req, res){
   const address = req.swagger.params.address.value;
-  const promise = (ethereum.utils.isAddress(address))
-    ? Promise.resolve(address)
-    : Promise.reject(new Error('not valid address'));
-  promise
+  const fromWei = ethereum.utils.fromWei;
+
+  isAddress(address)
   .then(
     address =>
       Promise.all([
-        contract.decimals(),
-        contract.balanceOf(address),
-        contract.frozenBalanceOf(address)
+        token.balanceOf(address),
+        crowdsale.owedTokens(address)
       ])
   )
   .then(
-    ([decimals, balance, frozen]) =>
+    ([balance, frozen]) =>
       ({
-        decimals: parseInt(decimals),
-        balance: (new BigNumber(balance)),
-        frozen: (new BigNumber(frozen))
-      })
-  )
-  .then(
-    ({decimals, balance, frozen}) =>
-      ({
-        balance: balance.dividedBy(10**decimals).toNumber(),
-        frozen: frozen.dividedBy(10**decimals).toNumber()
+        balance: fromWei(balance),
+        frozen: fromWei(frozen)
       })
   )
   .then(
@@ -292,41 +259,41 @@ function balance(req, res){
  *           $ref: '#/definitions/InternalError'
  */
 function stats(req, res){
-  const ether = ethereum.utils.unitMap.ether;
-  const get24hVolume = promisify(poloniex.get24hVolume.bind(poloniex));
-  const btc2eth =
-    () =>
-      get24hVolume()
-        .then( ({ BTC_ETH, USDT_ETH }) => ({
-          btc2eth: BTC_ETH['ETH']/BTC_ETH['BTC'],
-          usdt2eth: USDT_ETH['USDT']/USDT_ETH['ETH']
-        }));
   Promise.all([
-    btc2eth(),
-    contract.price()
-  ]).then(
-    ([coef, price]) =>
-      [ coef, new BigNumber(price) ]
-  ).then(
-    ([ { btc2eth, usdt2eth }, price]) => {
-      const nox2eth = price.div(ether).toNumber();
-      const nox2btc = price.div(ether).div(btc2eth.toString()).toNumber();
-      const nox2usd = nox2eth * usdt2eth; 
-      //ToDo: implement invested
-      return {
-        nox2eth,
-        nox2btc,
-        nox2usd,
-        invested: {
-          btc: 5,
-          eth: 10,
-          usd: 33000,
-          total: 100000,
-          investorsCount: 6
-        }
+    Price.last(),
+    crowdsale.rate(),
+    crowdsale.weiRaised(),
+    bitcoin.balance(btcAddress)
+  ])
+  .then(([exch, rate, weiRaised, satRaised]) => {
+    const nox2eth = new BigNumber((1/(+rate)).toString());
+    const nox2btc = nox2eth.mul(exch.btc);
+    const nox2usd = nox2eth.mul(exch.usd);
+    
+    const btc = compose(
+      toBitcoin,
+      btc => new BigNumber(btc)
+    )(satRaised);
+    const eth = compose(
+      fromWei,
+      eth => new BigNumber(eth)
+    )(weiRaised);
+    const usd = btc.div(exch.btc).mul(exch.usd).add(eth.mul(exch.usd));  
+    
+    return {
+      exch,
+      nox2eth,
+      nox2btc,
+      nox2usd,
+      invested: {
+        btc,
+        eth,
+        usd,
+        total: usd,
+        investorsCount: HOLDERS
       }
     }
-  )
+  })
   .then(
     data =>
       res
@@ -334,11 +301,11 @@ function stats(req, res){
         .json(data)
   )
   .catch(
-    e =>
+    e => console.log(e) ||
       res
         .status(500)
         .json(new InternalError())
   )
 }
 
-module.exports = { balance, verified, verify, unverify, stats };
+module.exports = { balance, verified, verify, stats };

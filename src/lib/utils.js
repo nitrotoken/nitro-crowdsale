@@ -1,6 +1,8 @@
 'use strict';
 
 const Fetch = require('node-fetch');
+const web3 = require('../rpc/ethereum');
+const etherscan = require('../rpc/etherscan');
 
 /**
  * Promisify callback function
@@ -62,17 +64,58 @@ const pcompose =
  * @param {...Object} args 
  */
 const fetch =
-  (...args) =>
-    Fetch(...args)
+(...args) =>
+  Fetch(...args)
+    .then(
+      res =>
+        res.json()
+    );
+   
+/**
+ * 
+ * @param {*} web3 
+ */
+const ContractCallerFactory =
+(web3) =>
+  (contract, contractAddress, account) =>
+    (methodName, ...args) => {
+      const method = contract.methods[methodName](...args);    
+      return method
+        .estimateGas()
+        .then(gas => account.signTransaction({
+          to: contractAddress,
+          gasLimit: gas,
+          data: method.encodeABI()
+        }))
       .then(
-        res =>
-          res.json()
+        ({rawTransaction}) =>
+          //etherscan.proxy.eth_sendRawTransaction(rawTransaction)
+          web3.eth.sendSignedTransaction(rawTransaction)
       );
-    
+  };
+
+/**
+ * @param {*} address 
+ */
+const isAddress =
+(address) =>
+  (web3.utils.isAddress(address))
+    ? Promise.resolve(address)
+    : Promise.reject(new Error('not valid address'));
+
+const holedrsCount =
+() =>
+  Fetch('https://etherscan.io/token/generic-tokenholders2?a=0xec46f8207d766012454c408de210bcbc2243e71c')
+    .then( res => res.text() )
+    .then( text => text.match(/total of (.*) Token Holders/g)[0].match(/[\d]+/g)[0] ); 
+
 module.exports = {
   promisify,
   curry,
   compose,
   pcompose,
-  fetch
+  fetch,
+  ContractCallerFactory,
+  isAddress,
+  holedrsCount
 };
