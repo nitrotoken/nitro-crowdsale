@@ -13,6 +13,10 @@ const Caller = CallerFactory(web3)(contract, address, account);
 
 Object.assign(exports, {
 
+  balances(index){
+    return methods.balances(index).call();
+  },
+
   wallet(){
     return methods.wallet().call();
   },

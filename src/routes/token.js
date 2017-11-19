@@ -2,6 +2,7 @@
 const BigNumber = require('bignumber.js');
 
 const btcAddress = require('../config').btcAddress;
+const tokenStat = require('../config').tokenStat;
 const crowdsale = require('../rpc/crowdsale');
 const token = require('../rpc/token');
 
@@ -15,8 +16,7 @@ const promisify = require('../lib/utils').promisify;
 const compose = require('../lib/utils').compose;
 const isAddress = require('../lib/utils').isAddress;
 
-const toBitcoin = require('satoshi-bitcoin').toBitcoin;
-const fromWei = ethereum.utils.fromWei;
+const { btc2big, wei2big, tokensSold } = require('../lib/tools');
 
 const {
   InternalError
@@ -263,25 +263,22 @@ function stats(req, res){
     Price.last(),
     crowdsale.rate(),
     crowdsale.weiRaised(),
-    bitcoin.balance(btcAddress)
+    bitcoin.balance(btcAddress),
+    tokensSold()
   ])
-  .then(([exch, rate, weiRaised, satRaised]) => {
+  .then(([exch, rate, weiRaised, satRaised, nox]) => {
     const nox2eth = new BigNumber((1/(+rate)).toString());
     const nox2btc = nox2eth.mul(exch.btc);
     const nox2usd = nox2eth.mul(exch.usd);
     
-    const btc = compose(
-      toBitcoin,
-      btc => new BigNumber(btc)
-    )(satRaised);
-    const eth = compose(
-      fromWei,
-      eth => new BigNumber(eth)
-    )(weiRaised);
+    const btc = btc2big(satRaised);
+    const eth = wei2big(weiRaised);
     const usd = btc.div(exch.btc).mul(exch.usd).add(eth.mul(exch.usd));  
-    
+
     return {
       exch,
+      nox,
+      avg: nox.div(tokenStat.hardCapPresale),
       nox2eth,
       nox2btc,
       nox2usd,

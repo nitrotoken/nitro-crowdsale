@@ -54,6 +54,7 @@ module.exports = {
 
   tokenStat:{
     total: new BigNumber('120000000'),
+    hardCapPresale: new BigNumber('40000000'),
     privateSaleEth: 5584,  
   },
   
