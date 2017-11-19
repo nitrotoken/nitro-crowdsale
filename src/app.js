@@ -32,7 +32,7 @@ SwaggerTools(swaggerJsDoc, middleware => {
   app.use(middleware.swaggerRouter({
     controllers: 'src/routes',
   }));
-  app.use(middleware.swaggerUi());
+  (config.env==='development') && app.use(middleware.swaggerUi());
 });
 
 app.use(function(err, req, res, next) {
