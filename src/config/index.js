@@ -1,4 +1,5 @@
 'use strict';
+const BigNumber = require('bignumber.js');
 
 const {
   MONGO_URI = '',
@@ -51,6 +52,11 @@ module.exports = {
   bitcoinRpc: BITCORE_RPC,
   ethereumRpc: ETHEREUM_RPC,
 
+  tokenStat:{
+    total: new BigNumber('120000000'),
+    privateSaleEth: 5584,  
+  },
+  
   redis: {
     host: REDIS_HOST,
     port: REDIS_PORT,
