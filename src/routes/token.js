@@ -259,7 +259,8 @@ function stats(req, res){
   Promise.all([
     Price.last(),
     crowdsale.rate(),
-    crowdsale.weiRaised(),
+    ethereum.eth.getBalance(crowdsale.address),
+    //crowdsale.weiRaised(),
     bitcoin.balance(btcAddress),
     tokensSold()
   ])

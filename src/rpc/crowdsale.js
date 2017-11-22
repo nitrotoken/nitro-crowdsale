@@ -12,6 +12,8 @@ const Caller = CallerFactory(web3)(contract, address, account);
 
 
 Object.assign(exports, {
+  
+  address,
 
   balances(index){
     return methods.balances(index).call();
