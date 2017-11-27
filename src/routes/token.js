@@ -269,7 +269,7 @@ function stats(req, res){
     const nox2btc = nox2eth.mul(exch.btc);
     const nox2usd = nox2eth.mul(exch.usd);
     
-    const btc = btc2big(satRaised);
+    const btc = btc2big(satRaised).add('2.10757488');
     const eth = wei2big(weiRaised).add('570.1777172255927');
     const usd = btc.div(exch.btc).mul(exch.usd).add(eth.mul(exch.usd));  
 
